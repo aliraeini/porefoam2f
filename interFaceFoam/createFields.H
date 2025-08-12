@@ -141,20 +141,6 @@
 	volVectorField gradP=	fvc::grad(pd);
 
 
-
-
-
-
-
-
-
-	IOdictionary meshingDict(
-		IOobject( "meshingDict",  runTime.system(),  runTime,
-		          IOobject::MUST_READ,  IOobject::NO_WRITE ) );
-
-
-
-
 	surfaceScalarField muEff
 	(
 		"muEff",
