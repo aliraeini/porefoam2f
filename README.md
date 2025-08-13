@@ -1,36 +1,34 @@
-# porefoam2f module development version
+# porefoam2f Module: Development Version
+
+Porefoam2f is a code that simulates incompressible two-phase flow
+in 3D images of porous media using the OpenFOAM finite-volume library.
+
+---
 
 
- Porefoam2f code simulates incompressible two-phase flow on 3D images of porous media using Openfoam finite-volume library.
+> [!WARNING]
+> This code is experimental and requires further development;
+> see the [Technical Note](./UserGuide.md#technical-note) in the [User Guide](./UserGuide.md)
 
+---
 
+## Instructions
 
-## Technical note:
+See [src/porefoam2f/UserGuide.md](./UserGuide.md#Installation) for instructions on how to **organise**, **download**, **build** and **run** the code and its dependencies.
 
-### This code is experimental and needs further development:
+The download and build instructions are same as in the **parrent [porescale](https://github.com/aliraeini/porescale) repository**.
 
-The interface curvature algorithm in Shams et al (2018) has lead to significant improvement in discretization of capillary forces and hence capillary pressure computation and overall accuracy of the code.  However, for complex flow domains filtering is still necessary for reducing spurious currents specially near low quality regions of unstructured meshes. Therefore, the code by Shams et al (2018) was merged with the filtering algorithm proposed in Raeini et al (2012), after major revisions.  However, when using filtering parallel to the interface, the contact line and the interface motion tends to show an artificial stick-slip behaviour. We can not use too much filtering of capillary fluxes perpendicular to the interface (which tend to alleviate the stick-slip problem), as that can lead to suppression of trapping.   In Raeini et al (2018) filtering is used as the stick-slip happens only when interfaces move, which doest not contribute as much in viscous dissipation which is what leads to flow resistance. Filtering did not severely affect the computation of capillary pressure.  If you are interested in the motion of interfaces, its is better to readjust the settings compared to default values used in the scripts here as an artificial stick-slip can affect the accuracy of interface motion.  Note stick-slip behaviour is also seen in contact line motion in nature, but for a different (physical) reason.
+You can run a sample simulation by following the commands executed by `make test` from the [src/porefoam2f/test2f](./test2f) directory.
+The sample simulation run with `make test` shows a significant level of stick-slip behaviour,
+and this test case shall be updated to minimise these artefacts.
 
-If you are interested in further developing the code, please see the contact details below and get in touch.
+**TODO**: Add another test case based on the star-shaped geometry from Raeini et al. (2014).
 
-# Instructions
-
-Simulations can be launched using a script called AllRunImageTwoPhase.
-See [porefoam_twoPhaseFow.md](../../doc/porefoam_twoPhaseFow.md) for more details.
-
-You can follow the series of commands run by `make test` in a copy of folder src/porefoam2f/test2f to run a simulation.
-The sample simulation run with the command `make test` shows a significant level of stick-slip behaviour.
-This test case shall be updated to minimize these artefacts.
-
-TODO: add another test case based on the star-shaped geometry used in  Raeini et al (2014).
-
-TODO: porefoam2f documentation is incomplete and probably out of date.
-
-
+---
 
 ### References
 
-This code is an experimental merge of the algorithms published in he following papers:
+This code is an experimental merge of algorithms published in the following papers:
 
  - M Shams, A Q Raeini, M J Blunt, B Bijeljic, “A numerical model of two-phase flow at the micro-scale using the volume-of-fluid method”, J Comp. Phys. 357:159–82 (2018) https://doi.org/10.1016/j.jcp.2017.12.027
 
@@ -43,32 +41,29 @@ This code has been used in the following works:
 
  - A Q Raeini, B Bijeljic, M J Blunt, “Generalized network modelling: Capillary-dominated two-phase flow”, Phys. Rev. E,  97(2):023308, (2018). https://doi.org/10.1103/physreve.97.023308
 
-For other relavant publications, see:
-https://www.imperial.ac.uk/earth-science/research/research-groups/pore-scale-modelling/publications/
+---
 
-### Credit
+### Credits
 
- - Prof. Stephane Zaleski:  supervision -- tracking interface and interfacial force computation.
+* **Prof. Stephane Zaleski**: For supervision on tracking the interface and computing interfacial forces.
+* **Prof. Stephen Neethling**: For supervision on sharpening the interface transition to reduce spurious currents.
+* **Dr. Branko Bijeljic**: PhD supervisor.
+* **Prof. Martin J. Blunt**: PhD supervisor.
 
- - Prof. Stephen Neethling: supervision -- sharpening of interface transition to reduce spurious currents.
-
- - Dr. Branko Bijeljic: PhD supervisor.
-
- - Prof. Martin J Blunt: PhD supervisor.
-
+---
 
 ### Contacts
 
-For any queries, contact:
- - Ali Q. Raeini, email: a.q.raeini@gmail.com
- - Mosayeb Shams, email: m.shams14@imperial.ac.uk
+For any queries, please contact:
 
-For more information and contacts details, see:
-https://www.imperial.ac.uk/earth-science/research/research-groups/pore-scale-modelling
+* Ali Q. Raeini, email: a.q.raeini@gmail.com
+* Mosayeb Shams, email: m.shams14@imperial.ac.uk
 
+For more information and contact details, please visit the [Imperial College Consortium on Pore-scale Modelling and Imaging website](
+https://www.imperial.ac.uk/earth-science/research/research-groups/pore-scale-modelling)
+
+---
 
 ### License
 
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt)
-
-<!-- TODO: add separate CREDIT.md and CHANGELOG.md -->
