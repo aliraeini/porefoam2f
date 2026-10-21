@@ -20,6 +20,8 @@
 # Used if oilFilldFracs<0, initialize from VSubElems image
 : ${VSElml:=alpha1.mhd}
 
+# E.g. "export nGrowAlpha=1", or export nGrowAlpha="1 -invertAlpha"
+: ${nGrowAlpha:=0}
 
 # fill a small portion of the image near the inlet with oil (onjecting phase)
 # give up to two numbers one <1 and the other >1, negatives will be skiped
@@ -32,7 +34,7 @@
 : ${nProc:=24}
 
 
-# tag mesh or decomposed/simulation case
+# tag mesh and/or decomposed/simulation case
 : ${meshTag:=""}
 : ${caseTag:=""}
 
@@ -69,9 +71,7 @@
 #############################################################################
 
 
-
-#set -x
-
+set -e
 
 if [ -n "$1" ]; then
     dataFiles=$1
@@ -106,7 +106,7 @@ fi
 # Copy this script to local (PWD) folder for user edit
 scriptName=`basename "${BASH_SOURCE[0]}"`
 scriptDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )/" && pwd )
-if ! [ -f $scriptName ]; then
+if [ "$1" == "copy-self" ] || ! [ -f $scriptName ]; then
 	cp  "${BASH_SOURCE[0]}" ./
 	sed -i s:'^[ \t]*'"guessPsDIR=".*:"	guessPsDIR=$msSrc": ./$scriptName
 	echo "please edit the input parameters in file $PWD/$scriptName and run:"
@@ -115,9 +115,7 @@ if ! [ -f $scriptName ]; then
 fi
 
 
-
-
-. $msSrc/script/initbash
+. $msSrc/script/foam.bashrc
 basedir=$msSrc/porefoam2f/script/base
 basedirExtra=$msSrc/porefoam2f/script/baseExtra
 
@@ -161,7 +159,7 @@ echo "_________________________ $dataFile  ____________________________"
   mshDir=${dataFile%.*}$meshTag
   echo; echo "$mshDir"
 
-# GENERATE MESH ========================================================================
+# GENERATE MESH =======================================================
   if ! [ -f $mshDir/constant/polyMesh/points ]; then
 	if ! [ -d $mshDir ]; then
 		### First run: create mesh
@@ -169,19 +167,23 @@ echo "_________________________ $dataFile  ____________________________"
 		echo " ###########  createing mesh: $mshDir   ########## "
 
 		cp -r $basedir $mshDir
-		cp  postProcessDict_${dataFile%.*}  $mshDir/system/postProcessDict
+		cp  postProcessDict_${dataFile%.*}  $mshDir/system/postProcessDict 2>/dev/null || echo skipped, no postProcessDict_${dataFile%.*}
 
 
+		echo " ---- create surface ----  "
 		cp "$dataFile".mhd  $mshDir/"$dataFile"_input.mhd # for future reference
 		sed -i 's/ElementDataFile[ \t]*=[ \t]*/ElementDataFile = ..\//'  $mshDir/${dataFile}_input.mhd
-		sed -i 's/\(ElementDataFile.*\)/\1\nUnit = 1e6 /'  $mshDir/${dataFile}_input.mhd #  @scale for snappyHexMesh
 		mkdir -p $mshDir/constant/triSurface
-		(cd $mshDir && runApp voxelImageProcess  "$dataFile"_input.mhd   "${mshDir}.mhd" )
-		(cd $mshDir && runApp voxelToFoamPar  "$dataFile"_input.mhd 1 1 1 F)
-		setValues BASENAME "$mshDir" $mshDir/system/meshingDict
+		(cd $mshDir && runApp voxelImageProcPy  "$dataFile"_input.mhd -o "${mshDir}.mhd" )
 
-		#echo " ---- create surface ----  "
 		#(cd $mshDir && RunUpdateBlockMeshDict ${mshDir}.mhd  2  $RefineLevel $nSkip )
+		vxlSize="$(cat $mshDir/$mshDir.mhd 2>/dev/null | grep ElementSize | sed -e 's/[\t ]/\n/g' | grep [0-9] | head -1 )"
+		echo "Using voxel size: $vxlSize"
+		dimSizX="$(cat $mshDir/$mshDir.mhd | grep DimSize | sed -e 's/[\t ]/\n/g' | grep [0-9] | head -1 )" # note `more` doesn't work, breaks piping
+		echo dimSizX $dimSizX
+		(cd $mshDir && runApp voxelToFoamPar  "$dataFile"_input.mhd 1 1 1 F F InVoxels)
+
+		setValues BASENAME "$mshDir" $mshDir/system/meshingDict
 		#(cd $mshDir && runApp voxelToSurface  )
 		#(cd $mshDir && runApp surfaceSmoothVP )
 		#echo "$mshDir/constant/triSurface : ";	(cd $mshDir && ls *.obj )
@@ -208,27 +210,27 @@ echo "_________________________ $dataFile  ____________________________"
 
 		(cd $mshDir && checkM 1)
 
-		echo "smoothMesh NIter:$smoothMeshNIter,  Boundary:$smoothMeshBoundary,  Internal:$smoothMeshInternal, Relax:$smoothMeshRelax"
-		for ((ii = 0 ; ii < $smoothMeshNIter ; ii++)); do
-			echo $ii
+		echo "smoothFMesh NIter:$smoothMeshNIter,  Boundary:$smoothMeshBoundary,  Internal:$smoothMeshInternal, Relax:$smoothMeshRelax"
+		for ((ii = 1 ; ii <= $smoothMeshNIter ; ii++)); do
+			echo Mesh smoothing iteraton $ii
 			if [ "$smoothMeshBoundary" == yes ]; then
-				(cd $mshDir && runApp -l log.smoothMesh-$ii.0 smoothMesh $smoothMeshRelax 10 0 1 && checkM $ii.0); fi
+				(cd $mshDir && runApp -l log.smoothFMesh-$ii.0 smoothFMesh $smoothMeshRelax 10 0 1 && checkM $ii.0); fi
 			if [ "$smoothMeshInternal" == yes ]; then
-				(cd $mshDir && runApp -l log.smoothMesh-$ii.1 smoothMesh $smoothMeshRelax 10 4 1 && checkM $ii.1); fi
+				(cd $mshDir && runApp -l log.smoothFMesh-$ii.1 smoothFMesh $smoothMeshRelax 10 4 1 && checkM $ii.1); fi
 		done
 
 
 
 		setKeywordValues method scotch ./$mshDir/system/decomposeParDict
 
-
-
+		(cd $mshDir && runApp transformPoints -scale "($vxlSize $vxlSize $vxlSize)" ) # #scale back
 
 
 		setBoundaryCondition Grainwalls "type" "wall" ./$mshDir/constant/polyMesh/boundary
 
 		(cd $mshDir && runApp renumberMesh -overwrite)
 		(cd $mshDir && runApp checkMesh)
+		# TODO check "bounding box" in $mshDir/log.checkMesh is correct. VxlImg autoUnit is causing headache!
 
 		#(cd $mshDir && runApp compactFaceToFace)
 
@@ -247,13 +249,17 @@ echo "_________________________ $dataFile  ____________________________"
 		setKeywordValues endTime $endTime ./$mshDir/system/controlDict
 
 
+		# printf "\ntitle $mshDir;\n"  >> $mshDir/vxlImage.mhd
+		# echo   "write_corners true;" >> $mshDir/vxlImage.mhd
+		# (cd $mshDir && runApp skelor vxlImage.mhd)
+
 	else
 		echo "Error: mesh folder exists but mesh is not there, remove $PWD/$mshDir and rerun to regenerate"
 	fi
 
  else
 
-# DECOMPOSE MESH AND RUN SIM ========================================================================
+# DECOMPOSE MESH AND RUN SIM ==========================================
 
   for UD1 in $UD1s; do
   for UD0 in $UD0s; do
@@ -265,7 +271,7 @@ echo "_________________________ $dataFile  ____________________________"
 
 	for oilFilldFrac in $oilFilldFracs ; do
 		echo "oilFilldFrac:  $oilFilldFrac"
-		runDir=${mshDir}${caseTag}_Uo${UD1}w${UD0}CAw${theta0} #_l$VSElml
+		runDir=${mshDir}${caseTag}_Uo${UD1}w${UD0}CAw${theta0}
 		maxS1=0.999
 		minS1=0.001
 		endTime=$endTimeTP
@@ -283,14 +289,9 @@ echo "_________________________ $dataFile  ____________________________"
 		echo " number of processors:  ${nProc}"
 		echo " Darcy velocity:  $UD1"
 
-# DECOMPOSE MESH   ========================================================================
+# DECOMPOSE MESH   ====================================================
 		if ! [ -d $runDir ]; then
 		 if ! [ -f $runDir/constant/polyMesh/points ]; then
-
-			#echo ". $poreFoamBashrc"
-			#. $poreFoamBashrc 1
-
-
 
 
 			mkdir $runDir
@@ -298,8 +299,6 @@ echo "_________________________ $dataFile  ____________________________"
 			cp -r $mshDir/constant  $runDir/
 			cp -r $mshDir/system  $runDir/
 			touch $runDir/$runDir.foam
-			(cd $runDir && runApp transformPoints -scale "(1e-6 1e-6 1e-6)" ) # #scale back
-			(cd $runDir && runApp checkMesh)
 
 
 			setKeywordValues maxS1   "$maxS1"  ./$runDir/system/controlDict
@@ -320,7 +319,7 @@ echo "_________________________ $dataFile  ____________________________"
 			setKeywordValues endTime $endTime ./$runDir/system/controlDict
 
 
-			boundingBox=$(cat ./$runDir/log.checkMesh | grep ound | grep box | sed 's:[a-zA-Z][a-zA-Z][a-zA-Z]*::g' \
+			boundingBox=$(cat ./$mshDir/log.checkMesh | grep ound | grep box | sed 's:[a-zA-Z][a-zA-Z][a-zA-Z]*::g' \
 			                  | sed 's:[\(\)]::g' |  sed 's:[eE]:\*10\^:g' | sed -e 's:[\t ][\t ]*:\n:g')
 			boundingBox=($boundingBox)
 			echo "UD1: $UD1,   boundingBox:  ${boundingBox[*]}"
@@ -345,16 +344,13 @@ echo "_________________________ $dataFile  ____________________________"
 			if (( $(echo "$oilFilldFrac < 0." | bc ) )); then
 			 if [ "$VSElml" == "alpha1.mhd" ] ; then
 				cp -r alpha1.* $runDir/
-				(cd $runDir && runApp  voxelAlphaFieldToFoam alpha1.mhd -nGrowAlpha 0)   #-invertAlpha
+				(cd $runDir && runApp  voxelAlphaFieldToFoam alpha1.mhd -nGrowAlpha ${nGrowAlpha})   #-invertAlpha
 			 else
-				echo '"$VSElml" != "alpha1.mhd" requires (closed-source) gnextract outputs'
-				vxlSElems=${mshDir}_VSubElems
-				cp -r $mshDir/$vxlSElems$VSElml.* $runDir/
-				cp -r $mshDir/${vxlSElems}0.mhd  $runDir/${vxlSElems}$VSElml.mhd
-				replaceValues "_VSubElems0" "_VSubElems$VSElml"   $runDir/${vxlSElems}$VSElml.mhd
-				echo  "threshold 120 2000"  >> $runDir/${vxlSElems}$VSElml.mhd
-				(cd $runDir && runApp  voxelImageProcess ${vxlSElems}$VSElml.mhd alpha1.mhd UChar)
-				(cd $runDir && runApp  voxelAlphaFieldToFoam alpha1.mhd -nGrowAlpha 0)   #-invertAlpha
+				echo '"$VSElml" != "alpha1.mhd" requires (closed-source) skelor outputs'
+				SNet=$mshDir
+				cp -r $mshDir/${SNet}.* $runDir/
+				(cd $runDir && runApp  voxelImageProcPy ${SNet}_corners.mhd  "img.threshold101(120, 2000); img.spacing=dbl3($vxlSize, $vxlSize, $vxlSize)"  alpha1.mhd UChar)
+				(cd $runDir && runApp  voxelAlphaFieldToFoam alpha1.mhd -nGrowAlpha ${nGrowAlpha})   #-invertAlpha
 			 fi
 			else
 				xInitAlpha=$(echo "scale=10; ${boundingBox[0]}+(${boundingBox[3]}-(${boundingBox[0]}))*$oilFilldFrac" | bc )
@@ -375,10 +371,7 @@ echo "_________________________ $dataFile  ____________________________"
 			#fi
 
 			(cd $runDir &&  runApp decomposePar)
-			(cd $runDir &&  mv -f log.renumberMesh log.renumberMeshSerial )
 			(cd $runDir &&  runMPI renumberMesh $nProc -overwrite)
-			#(cd $runDir &&  rm -f log.compactFaceToFace )
-			#(cd $runDir &&  runMPI compactFaceToFace $nProc )
 
 
 			sed -i 's/fixedFluxPressure;/fixedFluxPressure;\n        adjoint no;/' ./$runDir/processor*/0/pd
@@ -389,7 +382,7 @@ echo "_________________________ $dataFile  ____________________________"
 			echo "Error: $runDir/constant/polyMesh/points missing, mesh is not available or not decomposed properly"
 		 fi
 		else
-# RUN SIMULATION   ========================================================================
+# RUN SIMULATION   ====================================================
 
 			application=interFaceFoam
 
@@ -404,7 +397,7 @@ echo "_________________________ $dataFile  ____________________________"
 				prevRunDate=$(stat -c %y $runDir/log.$application | sed 's/[ :]/-/g' | sed 's/[.+].*//g')
 				(cd $runDir && mv  log.$application log.$application$prevRunDate )
 				sleep 0.5
-		    fi
+			 fi
 
 			 (cd $runDir && runMPI  $application $nProc )
 			else printf "\n\nError $application not found\n\nPATH:$PATH\npsSRC:$psSRC\n\n"
@@ -412,7 +405,7 @@ echo "_________________________ $dataFile  ____________________________"
 		fi
 
 	done
-  done
+	done
   done
   done
  fi

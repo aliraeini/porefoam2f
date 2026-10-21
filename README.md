@@ -26,6 +26,38 @@ and this test case shall be updated to minimise these artefacts.
 
 ---
 
+## Dependencies
+
+| Dependency | Used by | Notes |
+|---|---|---|
+| [foamx4m](https://github.com/aliraeini/foamxm) | all solvers and utilities (`USE_MINIFOAMX3=1`) | built from `pkgs/foamx4m`; includes cfMesh, used by the `*CFMesh*` cases |
+| [image3kit](https://github.com/image3kit/image3kit) voxlib (or [libvoxel](https://github.com/aliraeini/libvoxel) in porescale) | `interFaceFoam`, voxel-to-mesh utilities | `USE_VOX_IMG=1` |
+| pocketpy | `VxlPy { ... }` scripts in `.mhd` headers | `USE_POCKETPY=1`, shipped with image3kit |
+| zlib, libtiff | image I/O | `USE_ZLIB=1`, `USE_TIFF=1` |
+| OpenMP, MPI, scotch | parallel runs | system packages |
+| [script](https://github.com/aliraeini/script) | build (`Makefile.in`), runtime env (`bashrc`) | `msSrc/script` |
+| Python 3 | test post-processing (`test2f/post_process.py`) | |
+| [pnmkit](https://github.com/difizix/pnmkit) (optional) | Python case runners and pytest tests | `pnmkit.porefoam` |
+
+## Use from pnmkit
+
+`pnmkit.porefoam` provides Python replacements for the `script/AllRunImageTwoPhase*` scripts
+(`porefoam2f_case.py`, `porefoam2f_cli.py`, `run_2f_*.py`). They use the case templates in
+[script/base](script/base) and the same executables, which must be on `PATH`.
+See `pnmkit/porefoam/README.md` in the pnmkit repository.
+
+## Tests
+
+Both test sets are kept and run the same four voxel-cylinder cases (`SnpCCF`, `SnpFSF`, `CfmCCF`, `CfmFSF`),
+compared against [test2f/ref](test2f/ref):
+
+ - Native: `make test -j2` here runs [test2f](test2f) (bash `*.sh` + `post_process.py`) and
+   [test2fCrnr](test2fCrnr) (star/triangle throats).
+ - pytest: `pytest -m regression pnmkit/porefoam/tests` (see `pnmkit/porefoam/tests/README.md`;
+   `make compare` there diffs the two sets of outputs).
+
+---
+
 ### References
 
 This code is an experimental merge of algorithms published in the following papers:

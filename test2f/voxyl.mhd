@@ -1,0 +1,16 @@
+DimSize = 18 24 24
+ElementSize = 1 1 1
+Offset =      0    0    0
+
+VxlPy {
+  img.replace_range(0,255,1)
+  print("\nimg.spacing.x:", img.spacing.x)
+  assert img.spacing.x == 1 # in voxels for paint
+  img.spacing = dbl3(2,2,2) # FIXME: is this in the right place (i.e. is cylinder has infinite length?)
+  img.paint(cylinder((0,12,12), (18,12,12), 6, 0))
+  print("\nimg.spacing:", img.spacing)
+  img.spacing = dbl3(1,1,1)
+  img.print_info()
+  assert img.porosity() > 0.05
+  assert img.porosity() < 0.5
+}

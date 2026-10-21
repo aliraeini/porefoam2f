@@ -54,7 +54,7 @@ export smoothMeshInternal=yes
 export smoothMeshRelax=0.05
 
 # Clean up in case
-rm -rf ketton$meshTag*/ AllRunImageTwoPhaseCFMesh
+rm -rf ketton$meshTag*/ AllRunImageTwoPhase
 
 # AllRunImageTwoPhase copies itself to the current directory for edit and run
 AllRunImageTwoPhase

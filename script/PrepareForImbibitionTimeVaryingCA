@@ -1,0 +1,186 @@
+#!/bin/bash
+
+
+myCurrentDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )
+: ${msSrc:=$myCurrentDIR} ; export msSrc
+
+usage()
+{
+	echo "  usage: run:"
+	echo "       PrepareForImbibition  \"0.1\" 0.007       135   135               0.1                        Berea8_0.007   BereaImbRev"
+	echo "       this script will then create /BereaImb145_0.1/BereaImb135_0.1  for you"
+	echo " hint: PrepareForImbibition  tDrainEnds  u   CntAngl1  CntAngl2  fractionToBeFullyFilledWithWater    inputCaseDir  outCaseBaseName"
+
+
+}
+[[ -n "$6" ]] || { usage ; exit ; }
+
+
+
+tDrainEnds="$1"
+UD=$2
+CntAngl1=$3
+CntAngl2=$4
+xInitAlpha=$5
+dataFile="$6"
+ouputCaseBaseName="$7"
+
+echo PrepareForImbibitionTimeVaryingCA $@
+echo "$(date +%F):"  >>log.runCommands
+echo PrepareForImbibitionTimeVaryingCA $@  >>log.runCommands
+echo "" >>log.runCommands
+shift;shift;shift;shift;shift;shift;shift;
+
+
+. $msSrc/script/foam.bashrc
+
+
+delBoundaryCondition()
+{ # TODO DELTETE
+   sed -i '/'"$1"'/,/\}/s/^[ \t]*'"$2"'.*$/'"- TOBEDELETED -"'/g' $3
+   sed -i '/'"$1"'/,/\}/s/^'"$2"'.*$/'"- TOBEDELETED -"'/g' $3
+   sed -i '/^- TOBEDELETED -$/d' $3
+}
+
+
+
+##############TO CHANGE tDrainEnds
+pathToOrigCase=$dataFile #~ for pathToOrigCase in $dataFiles
+for tDrainEnd in $tDrainEnds
+do
+	echo "/^^^^^^^^^^^^^^^^^^^^^^^^ $pathToOrigCase ^^^^^^^^^^^^^^^^^^^^^^^\ "
+
+	caseDrain="${pathToOrigCase%/}"
+	caseDrain="${pathToOrigCase%/results}"
+	caseDrain="${caseDrain##*/}"
+	caseDrain="${caseDrain#*_}"
+	imbCase="${ouputCaseBaseName}_${CntAngl1}_${CntAngl2}_$tDrainEnd"
+if ! [ -d $imbCase ]; then
+	if [ -d $pathToOrigCase/processor0 ]; then
+
+		mkdir -p $imbCase
+		touch $imbCase/aa.foam
+		touch $imbCase/aa.OpenFOAM
+		#~ cp -r $pathToOrigCase/../run.pbs $imbCase/
+		#~ setValues "CASENAME" "$case" $imbCase/run.pbs
+
+		processorDirs="$(cd $pathToOrigCase/ && ls -d processo*[0-9])"
+		arr=($processorDirs)
+		IFS=$'\n'
+        nProc=$(( $(echo "${arr[*]}" | sed 's/processor//g' | sort -nr | head -n1)+1 ))
+		echo "nProc $nProc"
+
+		(cd $pathToOrigCase && runMPI checkMesh $nProc )
+		cp  $pathToOrigCase/log.checkMesh $imbCase
+
+	#~ if [ -d $pathToOrigCase/processor0 ]; then
+
+		echo  "setting up case" $imbCase from original case 	$pathToOrigCase
+		cp -r $pathToOrigCase/system $imbCase
+		cp -r $pathToOrigCase/constant $imbCase
+		cp -r $pathToOrigCase/0 $imbCase
+		latestTime="$(cd ${pathToOrigCase}/processor0 && ls -d -1 $tDrainEnd* | sed '/[a-z]/d'| sort -n -r | tail -n 1 | sort -n | head -n 1)"
+		echo "latestTime $latestTime"
+
+		for processorDir in $processorDirs; do
+			mkdir $imbCase/$processorDir
+			cp -r $pathToOrigCase/$processorDir/0 $imbCase/$processorDir
+			cp -r $pathToOrigCase/$processorDir/constant $imbCase/$processorDir
+			cp $pathToOrigCase/$processorDir/$latestTime/alpha1  $imbCase/$processorDir/0/alpha1
+			rm -rf $imbCase/$processorDir/[0-9]*.*/
+			rm -rf $imbCase/$processorDir/[1-9]*/
+		done
+
+
+		deleteKeyword "defaultFieldValues"  $imbCase/system/setFieldsDict
+		setValues "volScalarFieldValue alpha1 1" "volScalarFieldValue alpha1 0" $imbCase/system/setFieldsDict
+
+
+
+
+
+		boundingBox=$(cat ./$imbCase/log.checkMesh | grep ound | grep box | sed 's/[a-Z][a-Z][a-Z]*//g'| sed 's/[\(\)]//g' |  sed 's/[eE]/\*10\^/g' | sed -e 's/[\t ][\t ]*/\n/g')
+		boundingBox=($boundingBox)
+
+
+		echo "boundingBox:  ${boundingBox[0]} - ${boundingBox[3]}"
+		xInitAlpha=$(echo "scale=8; ${boundingBox[0]}+(${boundingBox[3]}-${boundingBox[0]})*($xInitAlpha)" | bc )
+		echo "xBeginAlpha: $xInitAlpha "
+
+		setKeywordValues box  "    (-1000 -1000 -1000)  ($xInitAlpha 1000 1000);" $imbCase/system/setFieldsDict
+
+
+
+    	setKeywordValues writeFormat ascii $imbCase/system/controlDict
+		(cd $imbCase && rm -f log.setFields)
+		(cd $imbCase && runMPI setFields $nProc )
+		(cd $imbCase && reconstructPar -time '(0)' -zeroTime -fields '( alpha1 )' > log.reconstructParAlpha0)
+    	setKeywordValues writeFormat binary $imbCase/system/controlDict
+
+		#~ echo "run.pbs"
+		#~ (cd $imbCase && sed -i 's/'"$caseDrain"'/'"$imbCase"'/g' run.pbs)
+
+
+		echo "Converting to slowGrowingUBC  ++++++++++++++ $imbCase needs to be checked : visualize using paraview +++++++++++++++++++"
+
+		echo "UD: $UD,   boundingBox:  ${boundingBox[*]}"
+		QOil=$(echo "scale=18; (${boundingBox[4]}-(${boundingBox[1]}))*(${boundingBox[5]}-(${boundingBox[2]}))*$UD" | bc )
+		echo "QOil: $QOil "
+
+
+
+		processorDirs="$(cd $imbCase && ls -d processo*[0-9])"
+		for processorDir in $processorDirs
+		do
+
+			setKeywordValues value  "uniform 0"  ${imbCase}/$processorDir/0/p
+			setKeywordValues value  "uniform   ( 0 0 0 )"  ${imbCase}/$processorDir/0/U
+
+			setBoundaryCondition Left  flowRate0 "$QOil" ${imbCase}/$processorDir/0/U
+			setBoundaryCondition Left  flowRate1 "0."            ${imbCase}/$processorDir/0/U
+			setBoundaryCondition Left  value "uniform  ( 0 0 0 )" ${imbCase}/$processorDir/0/U
+
+
+
+            timeVaryingAlphaContactAngleParams="\n     t0  0.05;\n     thetaT0  $CntAngl1;\n     te  0.10;\n     thetaTe  $CntAngl2  "
+			setBoundaryCondition Grainwalls  type   "timeVaryingAlphaContactAngle; $timeVaryingAlphaContactAngleParams" ${imbCase}/$processorDir/0/alpha1
+			delBoundaryCondition Grainwalls  theta0    ${imbCase}/$processorDir/0/alpha1
+			delBoundaryCondition Grainwalls  thetaA    ${imbCase}/$processorDir/0/alpha1
+			delBoundaryCondition Grainwalls  thetaR    ${imbCase}/$processorDir/0/alpha1
+
+		done
+
+
+
+
+		#~ setKeywordValues "writeInterval" " 600" $imbCase/system/controlDict
+
+		echo
+		echo "case $PWD/$imbCase is ready, check it with paraview"
+		echo "to run the flow simulation, type:"
+		echo "bash "
+		echo "cd $PWD/$imbCase "
+		echo "source $msSrc/porefoam/bashrc"
+		echo "mpirun -np 8 iInterFoam103PPP -parallel "
+		echo '#or: nohup mpirun -np 8 iInterFoam103PPP -parallel > log.iInterFoam103PPP  2>&1 & '
+		echo exit
+		echo
+		#~ tar -czf $imbCase.tar.gz  $imbCase
+		#mkdir $pathToOrigCase/../../LV60AImb3/
+		#cp  $imbCase.tar.gz  $pathToOrigCase/../../LV60AImb3/
+		#echo "copied to   $pathToOrigCase/../../LV60AImb3/$imbCase.tar.gz"
+		#~ echo " cp $imbCase.tar.gz"
+
+
+
+	else
+		echo  "???????? No processor directory found in $pathToOrigCase directory   ????????"
+		echo  "???????? This script works only with parallel runs ! not doing anything    ????????"
+	fi
+else
+		echo  "????????   $imbCase exists     ! not doing anything   ????????"
+		echo  "????????  delete  $imbCase  first to generate it again   ????????"
+fi
+
+	echo "\_________________________${pathToOrigCase}_________________________/ "
+done

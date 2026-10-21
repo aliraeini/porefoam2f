@@ -1,11 +1,13 @@
 
-all:  ;
+all:  ; echo "usage: make test -j2"
 clean:;
 
+tstdata=$(wildcard *.py) $(wildcard *.mhd) ref
+tsts = $(wildcard *.sh)
+# tsts = voxcylinder.sh  voxcylinderFSF.sh
+# tsts = voxcylCFMesh.sh  voxcylCFMeshFSF.sh
 
-tsts = $(wildcard *.mhd) $(wildcard *.sh)
-
-$(warning tsts: ${tsts})
+$(info tsts: ${tsts})
 
 msSrc ?= $(abspath ../..)
 

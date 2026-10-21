@@ -4,7 +4,7 @@
 myCurrentDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )
 : ${msSrc:=$myCurrentDIR} ; export msSrc
 
-. $msSrc/script/initbash
+. $msSrc/script/foam.bashrc
 
 
 
