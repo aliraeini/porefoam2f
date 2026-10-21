@@ -16,9 +16,9 @@
 \*-------------------------------------------------------------------------*/
 
 
-	voxelField<double> vface0(n,0.);
-	voxelField<double> vface1(n,0.);
-	voxelField<double> vface2(n,0.);
+	VoxelField<double> vface0(n,0.);
+	VoxelField<double> vface1(n,0.);
+	VoxelField<double> vface2(n,0.);
     const faceList& faces = mesh.faces();
     const surfaceVectorField& Cf = mesh.Cf();
     const surfaceVectorField& Sf = mesh.Sf();

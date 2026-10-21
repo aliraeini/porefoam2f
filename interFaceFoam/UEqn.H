@@ -9,8 +9,9 @@
         fvm::ddt(rho, U)
       + fvm::div(rhoPhi, U)
       - fvm::laplacian(muEff, U)
-      - (fvc::grad(U) & fvc::grad( surfaceScalarField("muEffOrig",twoPhaseProperties.muf()) ))
+      // - (fvc::grad(U) & fvc::grad( surfaceScalarField("muEffOrig",twoPhaseProperties.muf()) ))
     //- fvc::div(muEff*(fvc::interpolate(dev(fvc::grad(U))) & mesh.Sf()))
+      - fvc::div(muEff * ( mesh.Sf() & fvc::interpolate(dev2(T(fvc::grad(U)))) ) )
     );
 	if (oCorr == nOuterCorr-1 )
 	{
@@ -24,7 +25,7 @@
 
 	if(filterPd)
 	{
-		volScalarField rAU = 1./UEqn.A();
+		surfaceScalarField rAUf("(1|A(U))", fvc::interpolate(1./UEqn.A()));
 
 		//scalar AverageMagPdBeforeFilter=average(mag(pd)).value();
 		pFilter= pBoundBypSmoothFactor*(fvc::average(fvc::interpolate(pd)));

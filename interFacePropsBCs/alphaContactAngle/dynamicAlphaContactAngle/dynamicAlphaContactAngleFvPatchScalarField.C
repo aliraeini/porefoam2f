@@ -29,7 +29,7 @@ License
 #include "fvPatchFieldMapper.H"
 #include "volMesh.H"
 
-#ifdef FOAMX
+#ifdef FOAMXM
 #include "foamTime.H"
 #else
 # include "Time.H"

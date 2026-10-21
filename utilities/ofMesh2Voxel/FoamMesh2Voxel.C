@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
 	int3 nnn;
 	dbl3 xmin, dx;
-    voxelImage rock(headerName);
+    VoxelImage rock(std::string(headerName), readOpt::procAndConvert);
 	surfaceVectorField Cf =  mesh.Cf();
 	surfaceVectorField Sf =  mesh.Sf();
 
@@ -180,18 +180,24 @@ int main(int argc, char *argv[])
 	//dx*=1e-6;
 	//xmin*=1e-6;
 
+	boundBox box(mesh.points());
+	word meshUnit(meshingDict.lookupOrDefault("meshUnit", word("")));
+	if (meshUnit == "InVoxels" || (nnn[0] > 0 && box.max()[0] > 1.5 * nnn[0] * dx[0]))
+	{
+		Info << "Mesh is in voxel units (box.max = " << box.max()[0]
+		     << ", dx = " << dx[0] << "). Using voxel units for cell-to-voxel mapping." << endl;
+		xmin = dbl3(0.0, 0.0, 0.0);
+		dx = dbl3(1.0, 1.0, 1.0);
+	}
+
 	Info<<"xmin: "<<xmin[0]<<" "<<xmin[1]<<" "<<xmin[2]<<endl;
 	Info<<"dx:   "<<dx[0]<<" "<<dx[1]<<" "<<dx[2]<<endl;
 	Info<<"nnn:    "<<nnn[0]<<" "<<nnn[1]<<" "<<nnn[2]<<endl;
 
 
-
 	runTime.setTime(timeDirs[timeDirs.size()-1], timeDirs.size()-1);
 
 
-
-
-	//voxelField<double> pVoxel(nnn[0],nnn[1],nnn[2],0.);
 	rock.reset(nnn[0],nnn[1],nnn[2],1);
 
 
@@ -206,8 +212,10 @@ int main(int argc, char *argv[])
 		int j=(C[c][1]-xmin[1])/dx[1];
 		int k=(C[c][2]-xmin[2])/dx[2];
 
-		if (i>=0 && j>=0 && k>=0 && i<nnn[0] && j<nnn[1] && k<nnn[2])	rock(i,j,k)=0;
-		else							Info<<"Error: ijk: "<<i<<" "<<j<<" "<<k<<endl;
+		if (i>=0 && j>=0 && k>=0 && i<nnn[0] && j<nnn[1] && k<nnn[2])
+			rock(i,j,k)=0;
+		else
+			Info<<"Error: ijk: "<<i<<" "<<j<<" "<<k<<endl;
 	}
 
 	//if (headerName.empty())

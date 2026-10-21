@@ -56,6 +56,8 @@ Foam::interfaceProps::interfaceProps
 
     U_(U),
 
+    pimple(mesh().solutionDict().subDict("PIMPLE")),
+
     pc_(IOobject("pc", timeName(), mesh(),  IOobject::MUST_READ, IOobject::AUTO_WRITE), mesh() ),
 
     deltaS_(IOobject( "deltaS", timeName(), mesh()), fvc::snGrad(alpha1, "uncorrected")),
@@ -142,31 +144,24 @@ Foam::interfaceProps::interfaceProps
   ),
 
 
-    //transportPropertiesDict_(dict),
-    pcThicknessFactor_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("pcThicknessFactor") ) ),
-    fcCorrectTangent_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("fcCorrectTangent") ) ),
-    fcCorrectTangentRelax_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("fcCorrectTangentRelax") ) ),
-    fcdFilter_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("fcdFilter") ) ),
-    nPcNonOrthCorr_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("nPcNonOrthCorr") ) ),
-    pcRefCellOrig_( readLabel( mesh().solutionDict().subDict("PIMPLE").lookup("pcRefCell") ) ),
-    pcRefValueOrig_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("pcRefValue") ) ),
-    smoothingKernel_( readLabel( mesh().solutionDict().subDict("PIMPLE").lookup("smoothingKernel") ) ),
-    smoothingRelaxFactor_( readScalar( mesh().solutionDict().subDict("PIMPLE").lookup("smoothingRelaxFactor") ) ),
-    wallSmoothingKernel_( readLabel( mesh().solutionDict().subDict("PIMPLE").lookup("wallSmoothingKernel") ) ),
+	pcThicknessFactor_(     readScalar( pimple.lookup("pcThicknessFactor") ) ),
+	fcCorrectTangent_(      readScalar( pimple.lookup("fcCorrectTangent") ) ),
+	fcCorrectTangentRelax_( readScalar( pimple.lookup("fcCorrectTangentRelax") ) ),
+	fcdFilter_(             readScalar( pimple.lookup("fcdFilter") ) ),
+	nPcNonOrthCorr_(        readScalar( pimple.lookup("nPcNonOrthCorr") ) ),
+	pcRefCellOrig_(          readLabel( pimple.lookup("pcRefCell") ) ),
+	pcRefValueOrig_(        readScalar( pimple.lookup("pcRefValue") ) ),
+	smoothingKernel_(        readLabel( pimple.lookup("smoothingKernel") ) ),
+	smoothingRelaxFactor_(  readScalar( pimple.lookup("smoothingRelaxFactor") ) ),
+	wallSmoothingKernel_(    readLabel( pimple.lookup("wallSmoothingKernel") ) ),
     sigma_(dict.lookup("sigma")),
     deltaN_  ("deltaN", 1e-12/cbrt(average(mesh().V())) )
 #endif
-
 {
     const fvMesh& msh = mesh();
 
 	Info <<"setting up filtered surface force model"<<endl;
 
-	//SET_REF_(pcRefCell,pcRefValue,Orig_,alpha1_);
-
-    //setRefCell(pc_, msh.solutionDict().subDict("PIMPLE"), pcRefCell, pcRefValue);
-
-    //Info<< "cAlpha_" <<cAlpha_<<endl;
     Info<< "pcThicknessFactor_" <<pcThicknessFactor_<<endl;
     Info<< "fcCorrectTangent_" <<fcCorrectTangent_<<endl;
     Info<< "fcCorrectTangentRelax_" <<fcCorrectTangentRelax_<<endl;
@@ -366,14 +361,11 @@ Foam::interfaceProps::interfaceProps
 
 void Foam::interfaceProps::correct(scalar relaxDelS)
 {
-
-	const dictionary pimple =mesh().solutionDict().subDict("PIMPLE");
-    //cAlpha_=   readScalar( pimple.lookup("cAlpha") );
     pcThicknessFactor_=   readScalar( pimple.lookup("pcThicknessFactor") );
     word surfaceForceModel(pimple.lookup("surfaceForceModel"));
+	Info<<"surfaceForceModel: "<<surfaceForceModel<<endl;
+
     word alphafModel(pimple.lookup("alphafModel"));
-
-
 
 
 	scalar stime=alpha1_.time( ).elapsedCpuTime();
@@ -417,15 +409,14 @@ void Foam::interfaceProps::correct(scalar relaxDelS)
 
 
 
-	surfaceScalarField  stf
-	(	IOobject( "stf", timeName(), msh ),
+	surfaceScalarField  stf(
+		IOobject( "stf", timeName(), msh ),
 		msh,  dimensionedScalar("stf", dimPressure/dimLength*dimArea, 0.)
 	);
 
 
 	if (surfaceForceModel=="FSF")
 	{
-		Info<<surfaceForceModel<<endl;
 		calcCurvatureFSF(stf,deltaS_,a1a2);
 	}
 	else

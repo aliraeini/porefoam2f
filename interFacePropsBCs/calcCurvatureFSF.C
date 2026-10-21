@@ -27,6 +27,7 @@
 #include "fvcAverage.H"
 #include "fvmLaplacian.H"
 #include "fvCFD.H"
+#include "pointFVC.H"
 
 // Correction for the boundary condition on the unit normal nHat on
 // walls to produce the correct contact angle.
@@ -64,11 +65,11 @@ void Foam::interfaceProps::correctContactAngle
 			gradAlphab[bI] == gradAlphab[bI].patchInternalField();
 
 			vectorField gAlphaS = gradAlphab[bI];
-			primitivePatchInterpolation pinterpolator(msh.boundaryMesh()[bI]);
+			primitivePatchInterpolation ppi(msh.boundaryMesh()[bI]);
 			for (int i=0; i<1;i++)
 			{
-				gAlphaS = 0.1*pinterpolator.pointToFaceInterpolate(pinterpolator.faceToPointInterpolate(gAlphaS) )  //+0.5*alpha2sqrtp*gradAlphab[bI];
-							 + 0.9*gradAlphab[bI];
+				gAlphaS = 0.1*ppi.pointToFaceInterpolate( ppi.faceToPointInterpolate(gAlphaS) )
+				        + 0.9*gradAlphab[bI];
 			}
 			vectorField nsp = gAlphaS/(mag(gAlphaS) + deltaN_.value());
 
@@ -116,14 +117,12 @@ void Foam::interfaceProps::calcCurvatureFSF
 		const volScalarField& a1a2
 )
 {
-
-    const fvMesh& msh = stf.mesh();
-    const surfaceVectorField& Sf = msh.Sf();
-
-	const dictionary pimple = msh.solutionDict().subDict("PIMPLE");
+	const fvMesh& msh = stf.mesh();
+	const surfaceVectorField& Sf = msh.Sf();
 
 	smoothingKernel_ = readLabel( pimple.lookup("smoothingKernel") )%10;
-    smoothingRelaxFactor_ = readScalar( pimple.lookup("smoothingRelaxFactor") );
+	smoothingRelaxFactor_ = readScalar( pimple.lookup("smoothingRelaxFactor") );
+
 
 
 	volVectorField gradAlpha = fvc::reconstruct(fvc::snGrad(alpha1S_)*msh.magSf());//fvc::grad(alpha1S_,"smoothScheme");
@@ -139,9 +138,6 @@ void Foam::interfaceProps::calcCurvatureFSF
 
 
 	volScalarField a1a2Relaxed = smoothingRelaxFactor_*a1a2;
-	volScalarField a1xa2 = a1a2*(1.-0.000001)+0.000001;
-
-
 
 
 	for (int i=0; i<smoothingKernel_;i++)
@@ -158,10 +154,8 @@ void Foam::interfaceProps::calcCurvatureFSF
 	}
 	nS_ = nS_/(mag(nS_) + 1e-12);
 
-
-
-
 	nHatf_ = nHatfv & Sf;
+	nHatfv = fvc::interpolate(nS_);  // the scheme is different from above
 
 	surfaceScalarField snGradAlpha = fvc::snGrad(alpha1S_);
 	forAll(nHatf_,i)  if (nHatf_[i]*snGradAlpha[i] < 0) nHatf_[i]*=0.9;
@@ -171,7 +165,6 @@ void Foam::interfaceProps::calcCurvatureFSF
 
 
 
-	nHatfv = fvc::interpolate(nS_);  // the scheme is different from above
 	nHatf_ = nHatfv & Sf;
 	forAll(nHatf_,i)   if (nHatf_[i]*snGradAlpha[i] < 0) nHatf_[i]*=-0.1;
 
@@ -180,22 +173,30 @@ void Foam::interfaceProps::calcCurvatureFSF
 
 	if (smoothingKernel_) ///. smoothing Kc
 	{
+		volScalarField a1xa2 = a1a2*(1.-0.000001)+0.000001;
 		// this correction helps stablizing also improves the accuracy for capillary pressure,
 		// it has some theoretical basis but the coefficients here are chosen emperically
 		volScalarField mgK=mag(K_);
-		K_/=mag( 1. + 0.1*((alpha1S_-0.5)+0.1*K_/(magGradAlpha+5.*mgK)) * K_/(magGradAlpha+2.*mgK) )+1e-12;
+		magGradAlpha += 2.*mgK;
+		K_ *= magGradAlpha/(mag( magGradAlpha + 0.1*K_*((alpha1S_) +0.1*K_/(magGradAlpha+3.*mgK)))+1e-12*deltaN_);
 
 		{
 			 K_.correctBoundaryConditions();
-			 surfaceScalarField WKf=0.02+0.08*fvc::interpolate(a1xa2)+(mag(delS)/(mag(delS)+deltaN_));
-			 K_ = fvc::average(fvc::interpolate(K_)*WKf )/fvc::average(WKf );
-			 K_ = fvc::average(fvc::interpolate(K_,"smoothSchemeK")*WKf )/fvc::average(WKf );
-
-			 K_.correctBoundaryConditions();
 		}
 
-		stf=(sigma_)*((fvc::interpolate(K_*a1xa2,"smoothSchemeK"))/fvc::interpolate(a1xa2,"smoothSchemeK"))  *delS*msh.magSf();
+		surfaceScalarField a1a2f = fvc::interpolate(a1xa2,"smoothSchemeK");
+		surfaceScalarField Kf = fvc::interpolate(K_*a1xa2,"smoothSchemeK")/a1a2f;
 
+		{
+			a1a2f += (mag(delS)/(mag(delS)+deltaN_));
+			 pointScalarField Kp = faceToPointWeightedInterpolate(Kf, a1a2f, pMesh_);
+			 pointToFaceAverage(Kf, Kp, pMesh_, 0.5);
+			 Kp = faceToPointWeightedInterpolate(Kf, a1a2f, pMesh_);
+			 pointToFaceAverage(Kf, Kp, pMesh_, 0.5);
+			 Kp = faceToPointWeightedInterpolate(Kf, a1a2f, pMesh_);
+			 pointToFaceAverage(Kf, Kp, pMesh_, 0.5);
+		}
+		stf = sigma_ * Kf * delS * msh.magSf();
 	}
 	else
 	{

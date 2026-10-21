@@ -25,6 +25,7 @@
 
 #include <assert.h>
 #include "voxelImage.h"
+#include "voxelImageI.h"
 
 #include "fvCFD.H"
 
@@ -35,7 +36,7 @@
 
 #include "OFstream.H"
 
-#ifdef FOAMX
+#ifdef FOAMXM
 # include "foamTime.H"
 #else
 # include "Time.H"
@@ -60,7 +61,7 @@ void convertToFoamWrite
 	const fvMesh& mesh
 )
 {
-	voxelImageT<ImgT> vximage(alpha1Header); //dummy
+	VoxelImageT<ImgT> vximage(std::string(alpha1Header), readOpt::procAndConvert); //dummy
 
 	int3 n=vximage.size3();
 	dbl3 xmin=vximage.X0();

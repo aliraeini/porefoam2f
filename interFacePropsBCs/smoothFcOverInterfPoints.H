@@ -20,8 +20,6 @@
 \*-------------------------------------------------------------------------*/
 
 {
-	const dictionary pimple =msh.solutionDict().subDict("PIMPLE");
-
     smoothingKernel_=   readLabel( pimple.lookup("smoothingKernel") )%10;
     smoothingRelaxFactor_=   readScalar( pimple.lookup("smoothingRelaxFactor") );
 

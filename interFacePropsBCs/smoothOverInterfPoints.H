@@ -41,9 +41,6 @@ void Foam::interfaceProps::smoothOverInterfPointsNotUsed
 
 			//Info<<" * "<< sum( mag(curvatureForcefDiff) ).value()<<" * ";
 
-
-	const dictionary pimple = msh.solutionDict().subDict("PIMPLE");
-
 	pointVectorField pointForce
 	(	IOobject( "pointForce", timeName(), msh ),
 		 pMesh_,  dimensionedVector("pointForce", curvatureForcefDiff.dimensions(), vector::zero)
@@ -177,9 +174,6 @@ void Foam::interfaceProps::smoothNSOverInterfPoints
 
 
 			//Info<<" * "<< sum( mag(nHatSf) ).value()<<" * ";
-
-
-	//const dictionary pimple =msh.solutionDict().subDict("PIMPLE");
 
 
 	pointVectorField interfFaceNSpS

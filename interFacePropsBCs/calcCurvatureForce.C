@@ -35,7 +35,7 @@
 #include "correctForContactAngle.H"
 #include "pointGradLeastSquare.H"
 //#include "pointSnGrad_notUsed.H"
-#include "pointInterpolate.H"
+#include "pointFVC.H"
 //#include "edgeGrad.H"
 //#include "pointCurl.H"
 
@@ -84,7 +84,7 @@ Foam::surfaceScalarField Foam::interfaceProps::calcCurvatureFConservative
 
 
 	// volume to point interpolation of alpha
-	pointScalarField alpha1P = pointInterpolate(fvc::interpolate(alpha1S_),pMesh_);
+	pointScalarField alpha1P = faceToPointInterpolate(fvc::interpolate(alpha1S_), pMesh_);
 
 
 	labelList interfPoints(points.size(),0);

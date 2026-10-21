@@ -10,7 +10,6 @@ endif
 clean:; $(MAKE) -f  ${msSrc}/script/Makefile.in  recurseClean USE_msRecurse=1
 
 
-testDir = ${msSrc}/../test/Porefoam2f
-test: ;	cd test2f && make test
-#	mkdir -p ${testDir}
-#	$(msSrc)/script/testApp "${testDir}"  python3 "${CURDIR}/test.py"
+test: ;
+	cd test2f     && $(MAKE) test
+	cd test2fCrnr && $(MAKE) test

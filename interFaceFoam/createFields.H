@@ -100,10 +100,6 @@
 	);
 
 
-
-	dimensionedScalar deltaN(1e-8/Foam::cbrt(gAverage(mesh.V())));
-	Info<<"<<deltaN.value()="<<deltaN.value()<<endl;
-
 	//pd.correctBoundaryConditions();
 	U.correctBoundaryConditions();
 

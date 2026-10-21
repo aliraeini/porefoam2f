@@ -35,6 +35,10 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef FOAMXM
+# define Boundary GeometricBoundaryField
+#endif
+
 namespace Foam
 {
 
@@ -49,6 +53,7 @@ class interfaceProps
 	const volScalarField& alpha1_;// order is important
 	volScalarField alpha1S_;
 	const volVectorField& U_;
+	const dictionary& pimple;
 
 	volScalarField pc_;
 	surfaceScalarField deltaS_;
@@ -105,37 +110,27 @@ class interfaceProps
 	const dimensionedScalar deltaN_;
 
 
-
-
-#ifdef _USE_ALPHAF_
-#endif
-
 	// Private Member Functions
 
 	//- Disallow default bitwise copy construct and assignment
-	interfaceProps(const interfaceProps&);
-	void operator=(const interfaceProps&);
+	interfaceProps(const interfaceProps&) = delete;
+	void operator=(const interfaceProps&) = delete;
+
+        //- Re-calculate the interface curvature
+	void calculateK();
+
+	surfaceScalarField calcCurvatureFConservative();
 
 	//- Correction for the boundary condition on the unit normal nHat on
 	//  walls to produce the correct contact dynamic angle
 	//  calculated from the component of U parallel to the wall
-	void correctContactAngle
-	(
+	void correctContactAngle(
 		surfaceVectorField::Boundary& nHat,
 		volVectorField::Boundary& gradAlphaf,
 		volVectorField::Boundary& nSb,
 		volScalarField::Boundary& alphaSb
 	) const;
 
-        //- Re-calculate the interface curvature
-	void calculateK();
-
-
-	surfaceScalarField calcCurvatureFConservative
-	(
-		//surfaceVectorField& nSf,
-		//const surfaceScalarField& delS
-	);
 
 	void calcCurvatureFSF
 	(
@@ -143,6 +138,8 @@ class interfaceProps
 		const surfaceScalarField& delS,
 		const volScalarField& a1a2
 	);
+
+
 	void smoothOverInterfPointsNotUsed
 	(
 		surfaceVectorField& curvatureForcefDiff,

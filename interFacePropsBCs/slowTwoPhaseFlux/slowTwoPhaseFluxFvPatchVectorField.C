@@ -27,7 +27,7 @@
 #include "surfaceFields.H"
 #include "primitivePatchInterpolation.H"
 
-#ifdef FOAMX
+#ifdef FOAMXM
 #include "foamTime.H"
 #else
 # include "Time.H"

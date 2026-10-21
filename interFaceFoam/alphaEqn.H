@@ -8,17 +8,17 @@
 	const polyBoundaryMesh& boundary = mesh.boundaryMesh();
 
 
-	volScalarField alphaSm
+	volScalarField alSm
 	(
-		//IOobject( "alphaSm",  runTime.timeName(),  mesh ),
+		//IOobject( "alSm",  runTime.timeName(),  mesh ),
 		(1./0.94)*(curtailBADOFSET(alpha1,0.03)-0.03)
 		//,"zeroGradient"
 	);
-	alphaSm=0.7*alphaSm+0.3*fvc::average(fvc::interpolate(alpha1));
+	alSm=0.7*alSm+0.3*fvc::average(fvc::interpolate(alpha1));
 		forAll(boundary, bi) if(!boundary[bi].coupled())  {
-			alphaSm.boundaryFieldRef()[bi]==alphaSm.boundaryField()[bi].patchInternalField();	}
+			alSm.boundaryFieldRef()[bi]==alSm.boundaryField()[bi].patchInternalField();	}
 
-	surfaceVectorField gradAlphaf = fvc::interpolate(fvc::grad(alphaSm));
+	surfaceVectorField gradAlphaf = fvc::interpolate(fvc::grad(alSm));
 									//forAll(boundary, bi)if(!boundary[bi].coupled()) { gradAlphaf.boundaryField()[bi]*=0.;	}
 	gradAlphaf = gradAlphaf+0.1*fvc::interpolate(fvc::average(gradAlphaf));
 	gradAlphaf = gradAlphaf+0.1*fvc::interpolate(fvc::average(gradAlphaf));
@@ -32,7 +32,7 @@
 	//phic =  cAlpha*phic*(1.+interface.BInternalfs()) ;
 	//phic = min(cAlpha*phic*(1.+interface.BInternalfs()), 1.01*max(phic));
 	forAll(boundary, bi) if(!boundary[bi].coupled()) { phic.boundaryFieldRef()[bi]*=0.;	}
-	surfaceScalarField isS = mag(fvc::snGrad(curtailBADOFSET(alphaSm,0.48)));
+	surfaceScalarField isS = mag(fvc::snGrad(curtailBADOFSET(alSm,0.48)));
 	surfaceScalarField dNotInterf=1.-0.9*isS/(isS+interface.deltaN());
 	surfaceScalarField phir = min(cAlpha*dNotInterf*phic, 1.*max(phic))*nHatf;
 

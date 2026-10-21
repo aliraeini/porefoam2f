@@ -25,25 +25,21 @@ void correct( faceList & faces, DynamicField<point> & points, bool handlemultipl
 
 
 
-void writeSTLBINARY( const voxelImage & vxlImg, std::string outputSurface)
+void writeSTLBINARY( const VoxelImage & vxlImg, std::string outputSurface)
 {
 
-
-	Info<<"writeSTLBINARY: "<<endl;
+	std::cout<<"writeSTLBINARY: "<<std::endl;
 	int3 n=vxlImg.size3();n[0]-=2;n[1]-=2;n[2]-=2;
 	dbl3 X0=vxlImg.X0();
 	dbl3 dx=vxlImg.dx();
 	X0+=dx;
 
 
-
-//=======================================================================
-
+	//=======================================================================
 
 
 	const int nVVs=2;
-	const int
-
+	const int \
 	Internal     = 0,
 	Grainwalls   = 1,
 	Left  =nVVs+0,
@@ -76,7 +72,7 @@ void writeSTLBINARY( const voxelImage & vxlImg, std::string outputSurface)
 			{
 				//nCells++;
 
-				unsigned char
+				unsigned char \
 				neiv=vxlImg(ix-1,iy,iz);
 				if (ix!=1)
 				{
@@ -116,21 +112,21 @@ void writeSTLBINARY( const voxelImage & vxlImg, std::string outputSurface)
 	}
 
 	//cout<<"nCells: "<<nCells<<endl;
-	for(int ib=0;ib<255;++ib)  if(nFaces[ib])  cout<< " Faces_"<<ib<<" "<<nFaces[ib]<<endl;
+	for(int ib=0;ib<255;++ib)  if(nFaces[ib])  std::cout<< " Faces_"<<ib<<" "<<nFaces[ib]<<std::endl;
 
 
-	nBoundaries+=	( 1 && nFaces[Left])+
-						( 1 && nFaces[Right])+
-						( 1 && nFaces[Bottom])+
-						( 1 && nFaces[Top])+
-						( 1 && nFaces[Back])+
-						( 1 && nFaces[Front]);
+	nBoundaries += ( 1 && nFaces[Left])+
+	               ( 1 && nFaces[Right])+
+	               ( 1 && nFaces[Bottom])+
+	               ( 1 && nFaces[Top])+
+	               ( 1 && nFaces[Back])+
+	               ( 1 && nFaces[Front]);
 
 
 	std::array<size_t,255> iStartFaces; iStartFaces.fill(0);
 
 
-	cout<<"creating faces"<<endl;
+	std::cout<<"creating faces"<<std::endl;
 
 
 	std::array<faceList,255> faces_bs;
@@ -142,13 +138,13 @@ void writeSTLBINARY( const voxelImage & vxlImg, std::string outputSurface)
 		//std::fill(faces_bs[ib].begin(),faces_bs[ib].end(), face(4));
 	}
 
-voxelField<int> point_mapper(n[0]+1,n[1]+1,n[2]+1,-1);
+	VoxelField<int> point_mapper(n[0]+1, n[1]+1, n[2]+1, -1);
 
 	DynamicField<point> points;
 
 
 
-	cout<<"collecting faces"<<endl;
+	std::cout<<"collecting faces"<<std::endl;
 	int iPoints=-1;
 	auto point_mapper_insert = [&point_mapper, &points,  &dx,  &X0, &iPoints](int iix, int iiy, int iiz) ->
 	 int {
@@ -162,38 +158,33 @@ voxelField<int> point_mapper(n[0]+1,n[1]+1,n[2]+1,-1);
 	 };
 
 
-#define recordF_m( l10,l11,l20,l21,l30,l31, ii,jj,kk,type )					  \
-  {																				  \
-		   ++iFaces[type] ;														\
-			faces_bs[type][iFaces[type]].setSize(4);								  \
-			faces_bs[type][iFaces[type]][0]=point_mapper_insert(ii,jj,kk);								  \
-			faces_bs[type][iFaces[type]][1]=point_mapper_insert(ii+l11,jj+l21,kk+l31);					\
-			faces_bs[type][iFaces[type]][2]=point_mapper_insert(ii+l10+l11,jj+l20+l21,kk+l30+l31);  \
-			faces_bs[type][iFaces[type]][3]=point_mapper_insert(ii+l10,jj+l20,kk+l30);					\
- }
+	#define recordF_m( l10,l11,l20,l21,l30,l31, ii,jj,kk,type )                                \
+	{                                                                                          \
+		++iFaces[type];                                                                        \
+		faces_bs[type][iFaces[type]].setSize(4);                                               \
+		faces_bs[type][iFaces[type]][0]=point_mapper_insert(ii,jj,kk);                         \
+		faces_bs[type][iFaces[type]][1]=point_mapper_insert(ii+l11,jj+l21,kk+l31);             \
+		faces_bs[type][iFaces[type]][2]=point_mapper_insert(ii+l10+l11,jj+l20+l21,kk+l30+l31); \
+		faces_bs[type][iFaces[type]][3]=point_mapper_insert(ii+l10,jj+l20,kk+l30);             \
+	}
 
-
-#define  kclockwiserecordF(type) recordF_m( 1,0,0,1,0,0,   ix-1,iy-1,iz-1, type)
-#define kuclockwiserecordF(type) recordF_m( 0,1,1,0,0,0,   ix-1,iy-1,iz  , type)
-#define  jclockwiserecordF(type) recordF_m( 0,1,0,0,1,0,   ix-1,iy-1,iz-1, type)
-#define juclockwiserecordF(type) recordF_m( 1,0,0,0,0,1,   ix-1,iy  ,iz-1, type)
-#define  iclockwiserecordF(type) recordF_m( 0,0,1,0,0,1,   ix-1,iy-1,iz-1, type)
-#define iuclockwiserecordF(type) recordF_m( 0,0,0,1,1,0,   ix  ,iy-1,iz-1, type)
-
-
+	#define  kclockwiserecordF(type) recordF_m( 1,0,0,1,0,0,   ix-1,iy-1,iz-1, type)
+	#define kuclockwiserecordF(type) recordF_m( 0,1,1,0,0,0,   ix-1,iy-1,iz  , type)
+	#define  jclockwiserecordF(type) recordF_m( 0,1,0,0,1,0,   ix-1,iy-1,iz-1, type)
+	#define juclockwiserecordF(type) recordF_m( 1,0,0,0,0,1,   ix-1,iy  ,iz-1, type)
+	#define  iclockwiserecordF(type) recordF_m( 0,0,1,0,0,1,   ix-1,iy-1,iz-1, type)
+	#define iuclockwiserecordF(type) recordF_m( 0,0,0,1,1,0,   ix  ,iy-1,iz-1, type)
 
 
 	int iCells=-1;
 
-
 	std::array<int,255> iFaces; iFaces.fill(-1);
 
-	for (int iz=1;iz<=n[2];iz++)
-	{  cout<<(iz%50 ? '.' : '\n');cout.flush();
+	for (int iz=1;iz<=n[2];iz++) {
+		std::cout<<(iz%50 ? '.' : '\n'); std::cout.flush();
 		for (int iy=1;iy<=n[1];iy++)
 		 for (int ix=1;ix<=n[0];ix++)
-		  if (!vxlImg(ix,iy,iz))
-			{
+			if (!vxlImg(ix,iy,iz)) {
 
 				iCells++;
 
@@ -235,23 +226,18 @@ voxelField<int> point_mapper(n[0]+1,n[1]+1,n[2]+1,-1);
 				{
 				  if (neiv)    {kuclockwiserecordF( neiv)}
 				}else if (neiv) {kuclockwiserecordF( neiv)}
-
-
-		}
+			}
 	}
 
 
-//______________________________________________
 
-point_mapper.reset(0,0,0,0);
+	point_mapper.reset(0,0,0, 0);
 
 
 	Info<<"nPoints: "<<points.size()<<"	  "<<endl;		/*Info.flush()*/;
 
 
-
 	{
-
 		correct(faces_bs[1],points,true);
 		correct(faces_bs[1],points,true);
 		correct(faces_bs[1],points,false);

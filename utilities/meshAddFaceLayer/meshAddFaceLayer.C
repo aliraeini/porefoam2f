@@ -129,8 +129,6 @@ int main(int argc, char *argv[])
 	//forAll(edges, ei) { edges[ei].start()=grainpts[edges[ei].start()];  edges[ei].end()=grainpts[edges[ei].end()]; }
 
 	labelList grainpts = gwPatch.meshPoints();
-	labelList pointLbls(points.size(), 0);
-	forAll(grainpts, ip)		pointLbls[grainpts[ip]]=2^1;
 
 	//forAll(edges, ie)		e1s[ie]=edges[ie].fi
 

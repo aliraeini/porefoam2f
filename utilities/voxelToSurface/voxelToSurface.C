@@ -23,7 +23,7 @@
     #include <iostream>
     #include <vector>
 
-    #include <assert.h>
+    #include <cassert>
 
 #include "fvCFD.H"
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
 
 
-	voxelImage vximage(headerName);
+	VoxelImage vximage(std::string(headerName), readOpt::procAndConvert);
 	vximage.threshold101(0,0);
 	vximage.rotate('z');
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
 	vximage.cropD({0,0,0},n, 2,1);//         XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-	voxelImage SmoothedVoxels=vximage;
+	VoxelImage SmoothedVoxels=vximage;
 
 	vximage.cropD( int3(&nSmoothBegin[0])+2 ,n-int3(&nSmoothEnd[0])-1, 0, 0 );
 
@@ -122,11 +122,11 @@ int main(int argc, char *argv[])
 		label begin2_1=n[1]-beginSkip_1-perforationWidth;
 
 
-		voxelImage tmp1(perforationLengthFraction0*n[0],perforationWidth,perforationDepth,0);
+		VoxelImage tmp1(int3(perforationLengthFraction0*n[0],perforationWidth,perforationDepth),0);
 		SmoothedVoxels.setBlock	( 1+beginSkip_0, 1+beginSkip_1, 2, tmp1 );
 		SmoothedVoxels.setBlock	( 1+beginSkip_0, 1+begin2_1, 2, tmp1 );
 
-		voxelImage tmp2(perforationWidth,perforationLengthFraction1*n[1],perforationDepth,0);
+		VoxelImage tmp2(int3(perforationWidth,perforationLengthFraction1*n[1],perforationDepth),0);
 		SmoothedVoxels.setBlock	( 1+beginSkip_0, 1+beginSkip_1, 2, tmp2 );
 		SmoothedVoxels.setBlock	( 1+begin2_0, 1+beginSkip_1, 2, tmp2 );
 

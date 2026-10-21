@@ -67,7 +67,7 @@ SourceFiles
 #include "fvsPatchFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-#ifndef FOAMX // used in official openfoam
+#ifndef FOAMXM // used in official openfoam
  #define BLOCKING Pstream::commsTypes::blocking
 #else
  #define BLOCKING Pstream::blocking

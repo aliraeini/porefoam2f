@@ -9,7 +9,7 @@ OFCs=$(shell find | grep -F .C | sed s:./::)
 OFincs =   meshTools finiteVolume transportModels/incompressible transportModels
 OFlibs =   foam  finiteVolume meshTools incompressibleTransportModels
 
-msCFLAGS += -IalphaContactAngle -fPIC  -DNoRepository
+msCFLAGS += -IalphaContactAngle -fPIC  -DNoRepository -IalphaContactAngle/fixedContactAngle
 msLFLAGS +=  -fPIC -pthread -Wl,--enable-new-dtags
 USE_ZLIB=1
 USE_TIFF=1

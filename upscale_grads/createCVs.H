@@ -107,7 +107,7 @@
 
 	fileName imageName( postProcDict.lookupOrDefault("labelImage", fileName("")) );
 	Info << "labelImage:" << imageName<<endl;
-	voxelImageT<int> CV_img(1,1,1,1); CV_img.X0Ch()-=dbl3(100000000.,100000000.,100000000.);CV_img.dxCh()*=1000000000.;
+	VoxelImageT<int> CV_img(int3(1,1,1),1); CV_img.X0Ch()-=dbl3(100000000.,100000000.,100000000.);CV_img.dxCh()*=1000000000.;
 
 
 
@@ -120,7 +120,7 @@
 	if(myrank==0)
 	{
 #endif
-		if(!imageName.empty()) { readConvertFromHeader(CV_img,runTime.system()+"/../"+imageName); }
+		if(!imageName.empty()) { CV_img.readFromHeader(runTime.system()+"/../"+imageName); }
 		else Info<<"NO labelImage given"<<endl;
 #ifdef _USE_MPI_
 	}

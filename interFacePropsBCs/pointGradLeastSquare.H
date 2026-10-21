@@ -42,28 +42,11 @@ namespace Foam
 		);
 
 
-		//surfaceScalarField alphaf = fvc::interpolate(alpha1);
 		const faceList &  faces=msh.faces();
 		const surfaceVectorField & Cf=msh.Cf();
-		//const surfaceVectorField & deltaCC_=msh.delta();
-		//const vectorField& Cc=msh.C();
 		const surfaceScalarField & magSf=msh.magSf();
-		//const surfaceScalarField & snGAlpha=fvc::snGrad(alpha1);
-		//const labelList& owners = msh.faceOwner();
-		//const labelList& neis = msh.faceNeighbour();
-		//  const pointField &  points=msh.points();
-		//  vectorField gradAlphaP(points.size(),vector::zero);
 
-		// normal surface-gradient of the sharpened alpha
-		//surfaceScalarField deltaS_(fvc::snGrad(alpha1Sharp));
-		//surfaceScalarField DelSdX = (deltaS_)/msh.deltaCoeffs();
-		//surfaceScalarField magdS = mag(DelSdX);
-
-
-
-		symmTensorField GG(points.size(),symmTensor(1e-36,0.,0.,1e-36,0.,1e-36));
-
-
+		symmTensorField invGG(points.size(),symmTensor(1e-36,0.,0.,1e-36,0.,1e-36));
 
 		forAll(Cf, fI) // if(magdS[fI]>1e-12)
 		{
@@ -72,9 +55,9 @@ namespace Foam
 			const face& ff = faces[fI];
 			forAll(ff, ip)
 			{	label pI = ff[ip];
-				vector pp = points[pI];
-				scalar weightpd2 = weight/magSqr(pp-Cpi); //weightpd2*=weightpd2;
-				GG[pI] += weightpd2*sqr((Cpi - pp));
+				vector pp = Cpi - points[pI];
+				scalar weightpd2 = weight/magSqr(pp); //weightpd2*=weightpd2;
+				invGG[pI] += weightpd2*sqr(pp);
 			}
 		}
 
@@ -93,9 +76,10 @@ namespace Foam
 					scalar weight=pmagSf[pfI];   weight*=weight*0.5; //*pmagdS[pfI]
 					const face& ff = faces[pStart+pfI];
 					forAll(ff, ip)
-					{	vector pp = points[ff[ip]];
-						scalar weightpd2 = weight/magSqr(pp-Cpi); //weightpd2*=weightpd2;
-						GG[ff[ip]] += weightpd2*sqr((Cpi - pp));
+					{	label pI = ff[ip];
+						vector pp = Cpi - points[pI];
+						scalar weightpd2 = weight/magSqr(pp); //weightpd2*=weightpd2;
+						invGG[pI] += weightpd2*sqr(pp);
 					}
 				}
 			}
@@ -107,27 +91,27 @@ namespace Foam
 					scalar weight=pmagSf[pfI];  weight*=weight;  //*pmagdS[pfI]
 					const face& ff = faces[pStart+pfI];
 					forAll(ff, ip)
-					{	vector pp = points[ff[ip]];
-						scalar weightpd2 = weight/magSqr(pp-Cpi); //weightpd2*=weightpd2;
-						GG[ff[ip]] += weightpd2*sqr((Cpi - pp));
+					{	label pI = ff[ip];
+						vector pp = Cpi - points[pI];
+						scalar weightpd2 = weight/magSqr(pp); //weightpd2*=weightpd2;
+						invGG[pI] += weightpd2*sqr(pp);
 					}
 				}
 			}
 		}
 
-		syncTools::syncPointList(msh, GG, plusEqOp<symmTensor>(), pTraits<symmTensor>::zero);
+		syncTools::syncPointList(msh, invGG, plusEqOp<symmTensor>(), pTraits<symmTensor>::zero);
 
 
-
-
-
-		  symmTensorField invGG(points.size(),symmTensor::zero);
 		  forAll(points,pI)
 		  {
 				 if(interfPoints[pI])
-					  invGG[pI] = inv(GG[pI]);
+					  invGG[pI] = inv(invGG[pI]);
+					else
+						invGG[pI] = symmTensor::zero;
 		  }
 
+		// TODO cache invGG
 
 		forAll(alphaf, fI) // if(magdS[fI]>1e-12)
 		{

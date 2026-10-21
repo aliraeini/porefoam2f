@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
 	//unsigned int n[3];
 	//double  xmin[3];
-	voxelImage vximage(alpha1Header); //dummy
+	VoxelImage vximage(std::string(alpha1Header), readOpt::procAndConvert); //dummy
 
 	int3 n=vximage.size3();
 	dbl3 xmin=vximage.X0(); //xmin*=1e-6;
