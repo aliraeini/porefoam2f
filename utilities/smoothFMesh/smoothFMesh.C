@@ -33,6 +33,39 @@
 
 using namespace Foam;
 
+//! number of inverted cells and wrongly oriented faces (pyramids with negative volume, as in checkMesh) of the current mesh
+//! geometry; the points of these cells and of the cells next to these faces are flagged in badPoints (if not null)
+label nBadCellsFaces(const fvMesh& mesh, boolList* badPoints = nullptr)
+{
+	const vectorField& Sfs = mesh.faceAreas();
+	const vectorField& Cfs = mesh.faceCentres();
+	const vectorField& Ccs = mesh.cellCentres();
+	const labelList& owns = mesh.owner();
+	const labelList& neis = mesh.neighbour();
+	label nBad = 0;
+	forAll(mesh.cellVolumes(), cI)
+		if (mesh.cellVolumes()[cI] <= 0.)
+		{
+			++nBad;
+			if (badPoints) forAll(mesh.cellPoints()[cI], j)  (*badPoints)[mesh.cellPoints()[cI][j]] = true;
+		}
+	forAll(Sfs, fI)
+	{
+		bool bad = (Sfs[fI] & (Cfs[fI]-Ccs[owns[fI]])) <= 0.;
+		if (fI < mesh.nInternalFaces() && (Sfs[fI] & (Ccs[neis[fI]]-Cfs[fI])) <= 0.) bad = true;
+		if (bad)
+		{
+			++nBad;
+			if (badPoints)
+			{ // the cell centres depend on all points of the cells, so these have to be flagged too
+				forAll(mesh.cellPoints()[owns[fI]], j)  (*badPoints)[mesh.cellPoints()[owns[fI]][j]] = true;
+				if (fI < mesh.nInternalFaces()) forAll(mesh.cellPoints()[neis[fI]], j)  (*badPoints)[mesh.cellPoints()[neis[fI]][j]] = true;
+			}
+		}
+	}
+	return nBad;
+}
+
 
 
 
@@ -324,7 +357,32 @@ int main(int argc, char *argv[])
 
 
 
-		mesh.clearOut();
+
+		{ // move the mesh to the new points, so the next iteration uses up-to-date cell centres, volumes and normals.
+		  // The smoother has no built-in protection against inverting cells (e.g. collapsed boundary-layer cells at sharp
+		  // corners), so the points of cells and faces which became worse are moved back, until no new bad cell/face is left
+			mesh.movePoints(pointsOrig);
+			const label nBad0 = nBadCellsFaces(mesh);
+			label nBad = 0;
+			label nReverted = 0;
+			for (int tries=0; tries<30; ++tries)
+			{
+				mesh.movePoints(points);
+				boolList badPoints(points.size(), false);
+				nBad = nBadCellsFaces(mesh, &badPoints);
+				if (nBad <= nBad0) break;
+				forAll(badPoints, pI)
+					if (badPoints[pI] && points[pI] != pointsOrig[pI]) { points[pI] = pointsOrig[pI]; ++nReverted; }
+			}
+			if (nBad > nBad0)
+			{
+				points = pointsOrig;
+				mesh.movePoints(points);
+				Info<< "\n iteration "<<i<<" would invert cells, stopping, nBad: "<<nBad0<<" -> "<<nBad<<endl;
+				break;
+			}
+			if (nReverted) Info<< " ("<<nReverted<<" points kept) ";
+		}
 	}
 
 

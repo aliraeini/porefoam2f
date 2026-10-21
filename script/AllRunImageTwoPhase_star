@@ -140,6 +140,7 @@ echo "          dataFiles: $dataFiles"
 
 
 endTimeTP=$endTime;
+set -e 
 
 set -x -o pipefail
 
@@ -187,6 +188,7 @@ for Rpore in $Rpores ; do
 		(cd $mshDir && runApp checkMesh && mv log.checkMesh log.checkMesh.)
 
 		#(cd $mshDir && runApp  meshAddFaceLayer )
+		(cd $mshDir && runApp checkMesh && mv log.checkMesh log.checkMesh.0)
 
 		(cd $mshDir && runApp  smoothFMesh 0.2 10 2 1 && mv  log.smoothFMesh log.smoothFMesh-)
 		(cd $mshDir && runApp checkMesh && mv log.checkMesh log.checkMesh.1)
