@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 casBases="`ls -d *_SP | sed 's/_SP//g'`"
 echo $casBases

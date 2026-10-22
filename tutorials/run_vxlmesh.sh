@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # check
 [[ `pwd` != *"src/"* ]] || ! echo "Please run me from outside src tree" && exit 1

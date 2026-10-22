@@ -41,6 +41,21 @@ def print_stats(df: pd.DataFrame):
         print(column+'_max', df.loc[NSkip:, column].max())
 
 
+def print_bounding_box(summary_file):
+    """prints X_min..Z_max, the boundingBox of the mesh in the solver log (<case>/log.interFaceFoam) next to <case>_summary.txt:
+    a geometry check, which does not change with the flow."""
+    import os
+    log = summary_file.replace('_summary.txt', '') + '/log.interFaceFoam'
+    if not os.path.isfile(log):
+        return
+    with open(log, errors='ignore') as f:
+        m = re.search(r'boundingBox:\s*\(([^)]*)\)\s*-\s*\(([^)]*)\)', f.read())
+    if m:
+        lo, hi = m.group(1).split(), m.group(2).split()
+        for a, v in zip('XYZ', lo): print(f'{a}_min', v)
+        for a, v in zip('XYZ', hi): print(f'{a}_max', v)
+
+
 def plot_df(df: pd.DataFrame, axs, labl, markr, colr):
 
     ax=axs[0,0]
@@ -117,3 +132,4 @@ if __name__ == "__main__":
     else:
         df = parse_data(arg1)
         print_stats(df)
+        print_bounding_box(arg1)
