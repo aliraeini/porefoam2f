@@ -477,7 +477,7 @@ which averages the data to produce relative permeability curves.
 * `voxelToFoam(Par)`: Converts `.raw`/`.tif`/`.am` files to the OpenFOAM format,
   used for single-phase flow simulation.
 * `calc_perm`: Calculates single-phase permeability and porosity for single-phase simulations (obsolete).
-* `vxlToSurf`: Creates a 3D surface between void and solid,
+* `vxlToSurf` (built from image3kit/vxlToSurf): Creates a 3D surface between void and solid,
   used in mesh generation with `snappyHexMesh`/`cfMesh` for two-phase flow simulations.
 * `surfaceSmoothVP`: Smoothes `voxelToSurface` output for `cfMesh` while preserving volume.
 * `upscale_grads`: Calculates work and energy losses, used to plot relative permeability.
