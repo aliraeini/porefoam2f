@@ -101,7 +101,7 @@ if ! [ -n "$msSrc" ]; then
 	else
 		echo "Error: msSrc is not not set.";
 		echo " please set them first following the documentation, maybe by typing:"
-		echo "source ~/works/src/script/bashrc"
+		echo "source ~/works/script/bashrc"
 		exit 1
 	fi
 fi

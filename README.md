@@ -14,11 +14,11 @@ in 3D images of porous media using the OpenFOAM finite-volume library.
 
 ## Instructions
 
-See [src/porefoam2f/UserGuide.md](./UserGuide.md#Installation) for instructions on how to **organise**, **download**, **build** and **run** the code and its dependencies.
+See [porefoam2f/UserGuide.md](./UserGuide.md#Installation) for instructions on how to **organise**, **download**, **build** and **run** the code and its dependencies.
 
 The download and build instructions are same as in the **parrent [porescale](https://github.com/aliraeini/porescale) repository**.
 
-You can run a sample simulation by following the commands executed by `make test` from the [src/porefoam2f/test2f](./test2f) directory.
+You can run a sample simulation by following the commands executed by `make test` from the [porefoam2f/test2f](./test2f) directory.
 The sample simulation run with `make test` shows a significant level of stick-slip behaviour,
 and this test case shall be updated to minimise these artefacts.
 

@@ -73,16 +73,15 @@ run the following commands in a bash terminal:
 mkdir -p ~/Code/porefoam
 cd ~/Code/porefoam
 test -z "$(ls)" || ! echo "please run this in an empty folder"
-mkdir ./src ./pkgs
-echo include src/script/Makefile.msRoot > Makefile
+mkdir ./pkgs
+echo include script/Makefile.msRoot > Makefile
 git init
-git submodule add  https://github.com/aliraeini/script.git      src/script
-git submodule add  https://github.com/aliraeini/sirun.git       src/include
+git submodule add  https://github.com/aliraeini/script.git      script
 git submodule add  https://github.com/aliraeini/libtiff.git     pkgs/libtiff
 git submodule add  https://github.com/aliraeini/zlib.git        pkgs/zlib
-git submodule add  https://github.com/aliraeini/libvoxel.git    src/libvoxel
 git submodule add  https://github.com/aliraeini/foamxm.git      pkgs/foamx4m
-git submodule add  https://github.com/aliraeini/porefoam2f.git  src/porefoam2f
+git submodule add  https://github.com/difizix/image3kit.git    image3kit
+git submodule add  https://github.com/aliraeini/porefoam2f.git  porefoam2f
 ```
 
 See the **parrent [porescale](https://github.com/aliraeini/porescale)** for adding
@@ -92,7 +91,7 @@ and **pore-network models**.
 ### Compiling the Codes
 
 The codes require a recent C++ compiler that supports the `-std=c++20` flag.
-The compiler is set using the `msCXX` variable in the `~/Code/porefoam/src/script/Makefile.in` file.
+The compiler is set using the `msCXX` variable in the `~/Code/porefoam/script/Makefile.in` file.
 The default compiler (g++) will likely work, so no changes are usually needed.
 
 To compile the codes, open a terminal and type the following commands:
@@ -125,7 +124,7 @@ so *be extra careful* when using this option.
 To install the code in a terminal, run:
 
 ```bash
-source ~/Code/porefoam/src/script/bashrc
+source ~/Code/porefoam/script/bashrc
 ```
 
 Alternatively, you can edit your `~/.bashrc` (hidden) file and add the above command at the end.
@@ -190,7 +189,7 @@ and run the `AllRunImageTwoPhase` script in the same directory:
 
 ```bash
 # In case you haven't put these in your ~/.bashrc file:
-source ~/Code/porefoam/src/script/bashrc
+source ~/Code/porefoam/script/bashrc
 cd PATH_TO_.raw_.mhd_FILES
 AllRunImageTwoPhase  # prepare the input script/files, note: no './'
 ```
@@ -214,7 +213,7 @@ In a terminal, type (replace `Image.mhd` with the name of your image):
 After completing the drainage simulations, the boundary and initial conditions must
 be changed for an imbibition simulation.
 The scripts `PrepareForImbibition` and `PrepareForReverseImbibition`,
-located in the `~/Code/porefoam/src/porefoam2f/script` folder, are used to make these adjustments.
+located in the `~/Code/porefoam/porefoam2f/script` folder, are used to make these adjustments.
 `PrepareForReverseImbibition` performs the same function as `PrepareForImbibition`,
 but prepares the simulation for water injection from the opposite direction.
 
@@ -237,7 +236,7 @@ where:
 Example:
 
 ```bash
-export PATH=$PATH:~/Code/porefoam/src/porefoam2f/script #in case
+export PATH=$PATH:~/Code/porefoam/porefoam2f/script #in case
 
 PrepareForImbibition 0.1 0.001 135 0.1 Berea8_0.007 BereaImb
 
@@ -252,7 +251,7 @@ third `./AllRunImageTwoPhase` run discussed in the previous section).
 
 ```bash
 cd BereaImb*/ # go to the directory created for imbibition simulation
-source  ~/Code/porefoam/src/script/bashrc
+source  ~/Code/porefoam/script/bashrc
 mpirun -np 8 interFaceFoam -parallel
 # replace 8 with the number of decomposed processor domains
 # ( = number of BereaImb*/*/processor* subfolders)

@@ -3,8 +3,8 @@ set -e
 
 # check
 [[ `pwd` != *"src/"* ]] || ! echo "Please run me from outside src tree" && exit 1
-which AllRunImageTwoPhaseCFMesh || source porefoam/src/script/bashrc
-which AllRunImageTwoPhaseCFMesh || ! echo -e 'Please first `source .../src/script/bashrc`' && exit 1
+which AllRunImageTwoPhaseCFMesh || source porefoam/script/bashrc
+which AllRunImageTwoPhaseCFMesh || ! echo -e 'Please first `source .../script/bashrc`' && exit 1
 
 # download the input image
 if ! [ -e ketton.raw ]; then echo "Downloading ketton image"
